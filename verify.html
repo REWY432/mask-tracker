@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mask Verification | MaskOS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; margin: 0; }
+        .verify-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #0f172a; padding: 20px; }
+        .verify-card { background: #fff; max-width: 420px; width: 100%; border-radius: 16px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); text-align: center; }
+        .verify-header { background: #3b82f6; color: #fff; padding: 30px; }
+        .verify-header h1 { font-size: 22px; font-weight: 700; margin: 0 0 8px 0; }
+        .verify-body { padding: 30px; }
+        .verify-status-icon { font-size: 48px; margin-bottom: 16px; }
+        .verify-sn { font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 24px; }
+        .verify-grid { text-align: left; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+        .verify-grid-item { background: #f8fafc; padding: 12px; border-radius: 8px; }
+        .verify-grid-label { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: 600; }
+        .verify-grid-value { font-size: 15px; font-weight: 600; margin-top: 4px; color: #0f172a; }
+        .verify-footer { margin-top: 20px; font-size: 12px; color: #94a3b8; }
+        .error-card .verify-header { background: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="verify-wrapper">
+        <div class="verify-card" id="verify-card">
+            <div class="verify-header">
+                <h1 id="header-title">MaskOS</h1>
+                <p id="header-subtitle" style="margin:0; opacity: 0.9; font-size: 14px;">Authenticity Verification</p>
+            </div>
+            <div class="verify-body" id="verify-body">
+                <p style="color: #64748b;">Checking database...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ckwvyouciszfaigvowfv.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrd3Z5b3VjaXN6ZmFpZ3Zvd2Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NTU3MjgsImV4cCI6MjA5NzQzMTcyOH0.EVIxNi4TdUOKqGqZKViJpSq4RCrnj6BwWjawdDQyyNE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        async function checkMask() {
+            const params = new URLSearchParams(window.location.search);
+            const sn = params.get('sn');
+
+            if (!sn) {
+                document.getElementById('header-title').innerText = "Invalid Request";
+                document.getElementById('verify-body').innerHTML = `<p>No serial number provided.</p>`;
+                return;
+            }
+
+            const { data, error } = await supabase.from('masks').select('*').eq('serial_number', sn).single();
+
+            if (error || !data) {
+                document.getElementById('verify-card').classList.add('error-card');
+                document.getElementById('header-title').innerText = "Not Found";
+                document.getElementById('verify-body').innerHTML = `
+                    <div class="verify-status-icon">⚠️</div>
+                    <h2 style="color: #ef4444;">Counterfeit Alert</h2>
+                    <p style="color: #64748b; margin-top: 10px;">Serial number <b>${sn}</b> was not found in official manufacturing database.</p>
+                `;
+                return;
+            }
+
+            // Маска найдена
+            const modelMap = { 'f': 'Foil', 'e': 'Epee', 's': 'Sabre', 'c': 'Trainer' };
+            const dateObj = new Date(data.created_at);
+            const dateStr = `${dateObj.getMonth() + 1}.${dateObj.getFullYear()}`;
+
+            document.getElementById('header-title').innerText = "Original Product";
+            document.getElementById('verify-body').innerHTML = `
+                <div class="verify-status-icon">✅</div>
+                <div class="verify-sn">${data.serial_number}</div>
+                <div class="verify-grid">
+                    <div class="verify-grid-item"><span class="verify-grid-label">Model</span><span class="verify-grid-value">${modelMap[data.model_code]}</span></div>
+                    <div class="verify-grid-item"><span class="verify-grid-label">Size</span><span class="verify-grid-value">${data.size}</span></div>
+                    <div class="verify-grid-item"><span class="verify-grid-label">Lining</span><span class="verify-grid-value">${data.lining}</span></div>
+                    <div class="verify-grid-item"><span class="verify-grid-label">Produced</span><span class="verify-grid-value">${dateStr}</span></div>
+                </div>
+                <div style="padding: 10px; background: ${data.status === 'В ремонте' ? '#fffbeb' : '#ecfdf5'}; color: ${data.status === 'В ремонте' ? '#d97706' : '#059669'}; border-radius: 8px; font-weight: 600;">
+                    Status: ${data.status}
+                </div>
+                <div class="verify-footer">Powered by MaskOS Tracking System</div>
+            `;
+        }
+
+        checkMask();
+    </script>
+</body>
+</html>
