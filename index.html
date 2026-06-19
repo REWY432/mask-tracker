@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учет масок</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Библиотека для генерации QR-кода -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Библиотека Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+    <!-- Экран авторизации -->
+    <div id="auth-screen">
+        <h2>Ввод кода</h2>
+        <input type="password" id="auth-code" placeholder="Введите код доступа">
+        <button onclick="checkAuth()">Войти</button>
+    </div>
+
+    <!-- Основной рабочий экран -->
+    <div id="main-app" style="display: none;">
+        <h2>Регистрация маски</h2>
+        <form id="mask-form">
+            <select id="model" required>
+                <option value="s">Сабля (s)</option>
+                <option value="f">Рапира (f)</option>
+                <option value="e">Шпага (e)</option>
+                <option value="c">Тренерская (c)</option>
+            </select>
+            <select id="size" required>
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+            </select>
+            <input type="text" id="generation" placeholder="Поколение (напр. 60)" required>
+            <input type="text" id="lining" placeholder="Подкладка" value="InPo">
+            <button type="submit">Сохранить и распечатать</button>
+        </form>
+        <div id="message"></div>
+    </div>
+
+    <!-- Скрытый блок для печати этикетки (58х40 мм) -->
+    <div id="print-area">
+        <div id="qrcode"></div>
+        <div id="serial-text"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
