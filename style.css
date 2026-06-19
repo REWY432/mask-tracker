@@ -1,0 +1,60 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 10px;
+}
+select, input, button {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+button {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* Скрытый блок печати на экране */
+#print-area {
+    display: none;
+}
+
+/* Правила для печати (срабатывают при window.print()) */
+@media print {
+    body * {
+        visibility: hidden; /* Прячем всё */
+    }
+    #print-area, #print-area * {
+        visibility: visible; /* Показываем только область печати */
+    }
+    #print-area {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 58mm; /* Размер этикетки Xprinter */
+        height: 40mm;
+    }
+    #serial-text {
+        font-size: 10px;
+        font-weight: bold;
+        margin-left: 2mm;
+        text-align: center;
+    }
+    /* QR-код должен быть компактным */
+    #qrcode img, #qrcode canvas {
+        width: 25mm !important;
+        height: 25mm !important;
+    }
+    @page {
+        size: 58mm 40mm;
+        margin: 0;
+    }
+}
