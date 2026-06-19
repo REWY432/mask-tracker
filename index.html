@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учет масок</title>
+    <title>MaskTracker | Производство</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <!-- Библиотека для генерации QR-кода -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -13,33 +16,76 @@
 <body>
 
     <!-- Экран авторизации -->
-    <div id="auth-screen">
-        <h2>Ввод кода</h2>
-        <input type="password" id="auth-code" placeholder="Введите код доступа">
-        <button onclick="checkAuth()">Войти</button>
+    <div id="auth-screen" class="screen-center">
+        <div class="auth-card">
+            <div class="logo-icon">🤺</div>
+            <h2>MaskTracker</h2>
+            <p class="subtitle">Введите код доступа для входа в систему</p>
+            <input type="password" id="auth-code" class="modern-input" placeholder="• • • •" maxlength="4">
+            <button onclick="checkAuth()" class="btn-primary">Войти</button>
+        </div>
     </div>
 
     <!-- Основной рабочий экран -->
-    <div id="main-app" style="display: none;">
-        <h2>Регистрация маски</h2>
-        <form id="mask-form">
-            <select id="model" required>
-                <option value="s">Сабля (s)</option>
-                <option value="f">Рапира (f)</option>
-                <option value="e">Шпага (e)</option>
-                <option value="c">Тренерская (c)</option>
-            </select>
-            <select id="size" required>
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-            </select>
-            <input type="text" id="generation" placeholder="Поколение (напр. 60)" required>
-            <input type="text" id="lining" placeholder="Подкладка" value="InPo">
-            <button type="submit">Сохранить и распечатать</button>
-        </form>
-        <div id="message"></div>
+    <div id="main-app" class="hidden">
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon small">🤺</span>
+                <span class="logo-text">MaskTracker</span>
+            </div>
+            <div class="user-info">Мастер</div>
+        </header>
+
+        <main class="container">
+            <!-- Навигация (Вкладки) -->
+            <div class="tabs">
+                <button class="tab-btn active">Производство</button>
+                <button class="tab-btn disabled">Ремонт <span class="badge">Скоро</span></button>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">Регистрация новой маски</h2>
+                <p class="card-subtitle">Заполните данные для генерации серийного номера</p>
+                
+                <form id="mask-form">
+                    <div class="form-group">
+                        <label>Модель</label>
+                        <select id="model" required class="modern-input">
+                            <option value="s">Сабля (s)</option>
+                            <option value="f">Рапира (f)</option>
+                            <option value="e">Шпага (e)</option>
+                            <option value="c">Тренерская (c)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Размер</label>
+                            <select id="size" required class="modern-input">
+                                <option value="S">S</option>
+                                <option value="M">M</option>
+                                <option value="L">L</option>
+                                <option value="XL">XL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Поколение</label>
+                            <input type="text" id="generation" placeholder="Напр. 60" required class="modern-input">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Подкладка</label>
+                        <input type="text" id="lining" placeholder="InPo" value="InPo" class="modern-input">
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block" id="submit-btn">
+                        Сохранить и распечатать
+                    </button>
+                </form>
+                <div id="message" class="success-message"></div>
+            </div>
+        </main>
     </div>
 
     <!-- Скрытый блок для печати этикетки (58х40 мм) -->
