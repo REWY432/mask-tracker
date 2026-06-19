@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MaskTracker | Производство</title>
+    <title>MaskTracker | Дашборд</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Библиотека для генерации QR-кода -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- Библиотека Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -20,75 +18,126 @@
         <div class="auth-card">
             <div class="logo-icon">🤺</div>
             <h2>MaskTracker</h2>
-            <p class="subtitle">Введите код доступа для входа в систему</p>
+            <p class="subtitle">Введите код доступа</p>
             <input type="password" id="auth-code" class="modern-input" placeholder="• • • •" maxlength="4">
             <button onclick="checkAuth()" class="btn-primary">Войти</button>
         </div>
     </div>
 
-    <!-- Основной рабочий экран -->
+    <!-- Основной дашборд -->
     <div id="main-app" class="hidden">
         <header class="app-header">
             <div class="logo">
                 <span class="logo-icon small">🤺</span>
                 <span class="logo-text">MaskTracker</span>
             </div>
-            <div class="user-info">Мастер</div>
+            <div class="user-info">Мастер цеха</div>
         </header>
 
-        <main class="container">
-            <!-- Навигация (Вкладки) -->
-            <div class="tabs">
-                <button class="tab-btn active">Производство</button>
-                <button class="tab-btn disabled">Ремонт <span class="badge">Скоро</span></button>
+        <main class="dashboard-container">
+            
+            <!-- Панель статистики -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">ВСЕГО МАСОК</span>
+                    <span class="stat-value" id="stat-total">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">РАПИРА</span>
+                    <span class="stat-value" id="stat-foil">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">ШПАГА</span>
+                    <span class="stat-value" id="stat-epee">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">САБЛЯ</span>
+                    <span class="stat-value" id="stat-sabre">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">ТРЕНЕРСК.</span>
+                    <span class="stat-value" id="stat-trainer">0</span>
+                </div>
             </div>
 
-            <div class="card">
-                <h2 class="card-title">Регистрация новой маски</h2>
-                <p class="card-subtitle">Заполните данные для генерации серийного номера</p>
-                
-                <form id="mask-form">
-                    <div class="form-group">
-                        <label>Модель</label>
-                        <select id="model" required class="modern-input">
-                            <option value="s">Сабля (s)</option>
-                            <option value="f">Рапира (f)</option>
-                            <option value="e">Шпага (e)</option>
-                            <option value="c">Тренерская (c)</option>
-                        </select>
-                    </div>
+            <div class="content-grid">
+                <!-- Левая колонка: Форма -->
+                <div class="left-column">
+                    <div class="card">
+                        <h2 class="card-title">Новая маска</h2>
+                        <p class="card-subtitle">Регистрация в систему</p>
+                        
+                        <form id="mask-form">
+                            <div class="form-group">
+                                <label>Модель</label>
+                                <select id="model" required class="modern-input">
+                                    <option value="s">Сабля (s)</option>
+                                    <option value="f">Рапира (f)</option>
+                                    <option value="e">Шпага (e)</option>
+                                    <option value="c">Тренерская (c)</option>
+                                </select>
+                            </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Размер</label>
-                            <select id="size" required class="modern-input">
-                                <option value="S">S</option>
-                                <option value="M">M</option>
-                                <option value="L">L</option>
-                                <option value="XL">XL</option>
-                            </select>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Размер</label>
+                                    <select id="size" required class="modern-input">
+                                        <option value="S">S</option>
+                                        <option value="M">M</option>
+                                        <option value="L">L</option>
+                                        <option value="XL">XL</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Поколение</label>
+                                    <input type="text" id="generation" placeholder="60" required class="modern-input">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Подкладка</label>
+                                <input type="text" id="lining" placeholder="InPo" value="InPo" class="modern-input">
+                            </div>
+
+                            <button type="submit" class="btn-primary btn-block" id="submit-btn">
+                                Сохранить и распечатать
+                            </button>
+                        </form>
+                        <div id="message" class="success-message"></div>
+                    </div>
+                </div>
+
+                <!-- Правая колонка: Таблица -->
+                <div class="right-column">
+                    <div class="card table-card">
+                        <div class="table-header">
+                            <h2 class="card-title">База данных масок</h2>
+                            <input type="text" id="search-input" placeholder="Поиск по SN..." class="modern-input search-input">
                         </div>
-                        <div class="form-group">
-                            <label>Поколение</label>
-                            <input type="text" id="generation" placeholder="Напр. 60" required class="modern-input">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Mask / SN</th>
+                                        <th>Model</th>
+                                        <th>Specs</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="masks-tbody">
+                                    <!-- Данные загрузятся сюда -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-
-                    <div class="form-group">
-                        <label>Подкладка</label>
-                        <input type="text" id="lining" placeholder="InPo" value="InPo" class="modern-input">
-                    </div>
-
-                    <button type="submit" class="btn-primary btn-block" id="submit-btn">
-                        Сохранить и распечатать
-                    </button>
-                </form>
-                <div id="message" class="success-message"></div>
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- Скрытый блок для печати этикетки (58х40 мм) -->
+    <!-- Скрытый блок для печати -->
     <div id="print-area">
         <div id="qrcode"></div>
         <div id="serial-text"></div>
