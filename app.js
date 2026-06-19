@@ -29,28 +29,45 @@ function initSupabase() {
     document.getElementById('mask-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Визуальная загрузка на кнопке
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.innerText = 'Сохранение...';
+        submitBtn.disabled = true;
+
         const model = document.getElementById('model').value;
         const size = document.getElementById('size').value;
         const generation = document.getElementById('generation').value;
         const lining = document.getElementById('lining').value || 'InPo';
 
-        // Отправляем данные в базу. Триггер в БД сам сгенерирует серийник
         const { data, error } = await supabaseClient
             .from('masks')
             .insert([
                 { model_code: model, size: size, generation: generation, lining: lining }
             ])
-            .select(); // Возвращаем созданную строку
+            .select();
 
         if (error) {
             alert('Ошибка сохранения: ' + error.message);
+            submitBtn.innerText = 'Сохранить и распечатать';
+            submitBtn.disabled = false;
         } else if (data && data.length > 0) {
             const serial = data[0].serial_number;
-            document.getElementById('message').innerText = `Создана маска: ${serial}`;
+            
+            // Показываем красивое сообщение
+            const msgDiv = document.getElementById('message');
+            msgDiv.style.display = 'block';
+            msgDiv.innerText = `✓ Успешно! Маска: ${serial}`;
+            
             printLabel(serial);
+            
+            // Возвращаем кнопку обратно
+            submitBtn.innerText = 'Сохранить и распечатать';
+            submitBtn.disabled = false;
+            
+            // Скрываем сообщение через 3 секунды
+            setTimeout(() => { msgDiv.style.display = 'none'; }, 3000);
         }
     });
-}
 
 // Функция генерации QR и печати
 function printLabel(serialNumber) {
