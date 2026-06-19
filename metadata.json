@@ -1,0 +1,6 @@
+{
+  "name": "Fencing Mask Serial Generator",
+  "description": "System for automatically generating and tracking serial numbers for fencing masks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
