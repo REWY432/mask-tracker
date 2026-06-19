@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, Plus, LayoutGrid, Search, Trash2, Upload, Lock, QrCode, X, Printer, Edit2, Save } from 'lucide-react';
+import { Settings, Plus, LayoutGrid, Search, Trash2, Upload, Lock, QrCode, X, Printer, Edit2, Save, BarChart3, TrendingUp, Filter, Download, AlertTriangle } from 'lucide-react';
 import { MaskRecord, MaskModel } from './types';
 import Papa from 'papaparse';
 import { QRCodeSVG } from 'qrcode.react';
+import { Toaster, toast } from 'sonner';
 
 const MODEL_LABELS: Record<MaskModel, string> = {
   s: 'Сабля (s)',
@@ -33,6 +34,7 @@ export default function App() {
   const [isBatchPrintMode, setIsBatchPrintMode] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MaskRecord | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<MaskRecord>>({});
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -133,19 +135,27 @@ export default function App() {
       if (res.ok) {
         setShipment('');
         setUserName('');
+        toast.success(`Маска ${fullSerialNumber} сгенерирована`);
         await fetchData(); // Refresh data and sequence
       } else {
-        alert('Ошибка при сохранении');
+        toast.error('Ошибка при сохранении маски');
       }
     } catch (e) {
       console.error(e);
+      toast.error('Ошибка сети при сохранении');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const deleteRecord = async (id: string) => {
-    if (!confirm('Удалить эту запись? Это может нарушить сквозную нумерацию, вы уверены?')) return;
+  const confirmDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const executeDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
     
     try {
       const res = await fetch(`/api/masks/${id}`, {
@@ -153,11 +163,27 @@ export default function App() {
         headers: { 'x-auth-code': authCode }
       });
       if (res.ok) {
+        toast.success('Запись удалена');
+        
+        // Remove from selected ids if it was selected
+        const newSelected = new Set(selectedRecordIds);
+        if (newSelected.has(id)) {
+          newSelected.delete(id);
+          setSelectedRecordIds(newSelected);
+        }
+        
         await fetchData();
+      } else {
+        toast.error('Ошибка при удалении');
       }
     } catch (e) {
       console.error(e);
+      toast.error('Ошибка сети при удалении');
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmId(null);
   };
 
   const startEditing = (record: MaskRecord) => {
@@ -198,12 +224,14 @@ export default function App() {
       if (res.ok) {
         setEditingRecord(null);
         setEditFormData({});
+        toast.success('Запись успешно обновлена');
         await fetchData();
       } else {
-        alert('Ошибка при обновлении');
+        toast.error('Ошибка при обновлении');
       }
     } catch (e) {
       console.error(e);
+      toast.error('Ошибка сети при обновлении');
     }
   };
 
@@ -250,15 +278,15 @@ export default function App() {
           });
           
           if (res.ok) {
-            alert(`Импортировано ${importedRecords.length} записей из Excel/CSV`);
+            toast.success(`Импортировано ${importedRecords.length} записей из Excel/CSV`);
             await fetchData();
           } else {
             const err = await res.json();
-            alert(`Ошибка импорта: ${err.error}`);
+            toast.error(`Ошибка импорта: ${err.error}`);
           }
         } catch (error) {
           console.error(error);
-          alert('Сбой импорта');
+          toast.error('Сбой импорта');
         } finally {
           setIsLoading(false);
           if (fileInputRef.current) fileInputRef.current.value = '';
@@ -348,8 +376,24 @@ export default function App() {
 
   const selectedRecordsArray = records.filter(r => selectedRecordIds.has(r.id));
 
+  // Analytics calculation
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = parseInt(currentDate.getFullYear().toString().slice(-2), 10);
+  const masksThisMonth = records.filter(r => r.month === currentMonth && r.year === currentYear).length;
+  
+  const modelDistribution = records.reduce((acc, r) => {
+    acc[r.model] = (acc[r.model] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  const mostPopularModelEntry = Object.entries(modelDistribution)
+    .sort((a,b) => b[1] - a[1])[0];
+  const mostPopularModelLabel = mostPopularModelEntry ? MODEL_LABELS[mostPopularModelEntry[0] as MaskModel] : '-';
+
   return (
     <div className="min-h-screen bg-slate-50/80 text-slate-900 font-sans print:bg-white print:text-black selection:bg-indigo-500/20">
+      <Toaster position="top-right" richColors />
       <header className="bg-slate-900 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-20 shadow-lg shadow-black/5 print:hidden">
         <div className="flex items-center gap-4">
           <div className="bg-indigo-500/10 p-2.5 rounded-xl border border-indigo-500/20 shadow-inner">
@@ -522,6 +566,36 @@ export default function App() {
 
         {/* Right Side: Data Table */}
         <div className="xl:col-span-8 space-y-6 print:hidden">
+
+          {/* Analytics Widgets */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-black/5 flex items-center gap-4">
+              <div className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center shrink-0">
+                <BarChart3 className="w-6 h-6 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-500">Масок в этом месяце</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-2xl font-bold tracking-tight text-slate-900">{masksThisMonth}</span>
+                  <span className="text-xs font-semibold px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md ring-1 ring-emerald-500/20">{currentMonth}/{currentYear}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-black/5 flex items-center gap-4">
+              <div className="w-12 h-12 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center shrink-0">
+                <TrendingUp className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-500">Популярная модель</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-2xl font-bold tracking-tight text-slate-900">{mostPopularModelEntry ? mostPopularModelEntry[1] : 0}</span>
+                  <span className="text-xs font-medium text-slate-500">шт. ({mostPopularModelLabel})</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 ring-1 ring-black/5">
             <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
               <div className="relative w-full sm:w-72">
@@ -728,7 +802,7 @@ export default function App() {
                               <QrCode className="w-4 h-4" />
                             </button>
                             <button 
-                              onClick={() => deleteRecord(record.id)}
+                              onClick={() => confirmDelete(record.id)}
                               className="text-slate-500 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-md transition-colors"
                               title="Удалить"
                             >
@@ -856,6 +930,37 @@ export default function App() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 print:hidden">
+          <div className="bg-white rounded-3xl shadow-2xl shadow-indigo-900/5 w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200 border border-slate-200/50">
+            <div className="p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-red-100">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-2">Удаление записи</h3>
+              <p className="text-sm text-slate-500 mb-6 px-2">
+                Вы уверены, что хотите безвозвратно удалить эту маску? Это может нарушить сквозную нумерацию новых моделей этого месяца.
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={cancelDelete}
+                  className="flex-1 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold py-3 px-4 rounded-xl transition-all duration-200 outline-none shadow-sm"
+                >
+                  Отмена
+                </button>
+                <button 
+                  onClick={executeDelete}
+                  className="flex-1 bg-red-600 text-white hover:bg-red-700 font-semibold py-3 px-4 rounded-xl transition-all duration-200 outline-none shadow-sm hover:shadow-md"
+                >
+                  Удалить
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
