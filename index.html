@@ -1,152 +1,247 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MaskOS | Production Tracker</title>
+    <meta name="theme-color" content="#0f172a">
+    <title>MaskOS — Production Tracker</title>
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="style.css">
+    
+    <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Библиотека для сканирования QR камерой -->
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
-    <!-- Экран авторизации -->
+    <!-- ============================================
+         AUTH SCREEN
+         ============================================ -->
     <div id="auth-screen" class="auth-wrapper">
         <div class="auth-card">
-            <div class="auth-logo">MASK<span>OS</span></div>
+            <div class="auth-logo">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style="display:block;margin:0 auto 16px">
+                    <rect x="4" y="12" width="40" height="24" rx="4" stroke="white" stroke-width="2" fill="none"/>
+                    <path d="M14 20h6M28 20h6M14 28h12M30 28h4" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <circle cx="36" cy="22" r="2" fill="#3b82f6"/>
+                    <path d="M20 12v-2a2 2 0 012-2h4a2 2 0 012 2v2" stroke="white" stroke-width="2" fill="none"/>
+                </svg>
+                <div>MASK<span>OS</span></div>
+            </div>
             <p class="auth-subtitle">Manufacturing Execution System</p>
-            <input type="password" id="auth-code" class="glass-input" placeholder="Access Code" maxlength="4">
-            <button onclick="checkAuth()" class="btn-primary">Enter System</button>
+            <input type="password" id="auth-code" class="glass-input" placeholder="Код доступа" maxlength="4" autofocus>
+            <button onclick="checkAuth()" class="btn btn-primary btn-block btn-lg" style="margin-top:24px">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M13 12H3"/></svg>
+                Войти в систему
+            </button>
+            <p id="auth-error" style="color:#ef4444; margin-top:16px; font-size:0.875rem; display:none"></p>
         </div>
     </div>
 
-    <!-- Основной интерфейс -->
+    <!-- ============================================
+         TOAST CONTAINER
+         ============================================ -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ============================================
+         MAIN APP
+         ============================================ -->
     <div id="main-app" class="hidden layout">
-        <!-- Боковая панель -->
+
+        <!-- Sidebar -->
         <aside class="sidebar">
-            <div class="sidebar-logo">MASK<span>OS</span></div>
+            <div style="display:flex;align-items:center;gap:12px">
+                <div class="sidebar-logo">MASK<span>OS</span></div>
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="theme-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="theme-icon-sun"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="theme-icon-moon" style="display:none"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                </button>
+            </div>
             <nav class="sidebar-nav">
                 <a href="#" class="nav-item active" id="tab-dashboard" onclick="switchView('dashboard')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                    Dashboard
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+                    Панель
                 </a>
                 <a href="#" class="nav-item" id="tab-repairs" onclick="switchView('repairs')">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                    Repairs
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                    Ремонт
                 </a>
             </nav>
             <div class="sidebar-footer">
                 <div class="user-chip">
                     <div class="avatar">M</div>
                     <div class="user-info">
-                        <span class="user-name">Master</span>
-                        <span class="user-role">Production</span>
+                        <span class="user-name">Мастер</span>
+                        <span class="user-role">Производство</span>
                     </div>
                 </div>
             </div>
         </aside>
 
-        <!-- Основная зона -->
+        <!-- Main Content -->
         <main class="main-content">
-            
-            <!-- VIEW: DASHBOARD -->
+
+            <!-- ============================================
+                 DASHBOARD VIEW
+                 ============================================ -->
             <div id="view-dashboard">
-                <header class="main-header">
+                <header class="main-header fade-in">
                     <div>
-                        <h1>Production Overview</h1>
-                        <p class="header-subtitle">Real-time manufacturing tracker</p>
+                        <h1>Производство масок</h1>
+                        <p class="header-subtitle">Отслеживание выпуска в реальном времени</p>
                     </div>
-                    <button class="btn-primary" onclick="document.getElementById('mask-form').scrollIntoView({behavior: 'smooth'})">
-                        + New Mask
+                    <button class="btn btn-primary btn-lg" onclick="document.getElementById('mask-form-section').scrollIntoView({behavior:'smooth'})">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Новая маска
                     </button>
                 </header>
 
-                <div class="metrics-grid">
-                    <div class="metric-card"><span class="metric-label">Total Production</span><span class="metric-value" id="stat-total">0</span></div>
-                    <div class="metric-card"><span class="metric-label">Foil</span><span class="metric-value" id="stat-foil">0</span></div>
-                    <div class="metric-card"><span class="metric-label">Epee</span><span class="metric-value" id="stat-epee">0</span></div>
-                    <div class="metric-card"><span class="metric-label">Sabre</span><span class="metric-value" id="stat-sabre">0</span></div>
+                <!-- Metrics -->
+                <div class="metrics-grid fade-in" style="animation-delay:0.1s">
+                    <div class="metric-card">
+                        <span class="metric-label">Всего выпущено</span>
+                        <span class="metric-value" id="stat-total">—</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Foil / Рапира</span>
+                        <span class="metric-value" id="stat-foil">—</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Epee / Шпага</span>
+                        <span class="metric-value" id="stat-epee">—</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Sabre / Сабля</span>
+                        <span class="metric-value" id="stat-sabre">—</span>
+                    </div>
                 </div>
 
-                <div class="grid-layout-2col">
-                    <div class="card form-card">
-                        <h2 class="card-title">Register New Unit</h2>
+                <!-- Form + Table -->
+                <div class="grid-2col">
+                    <!-- New Mask Form -->
+                    <div class="card form-card fade-in" style="animation-delay:0.15s" id="mask-form-section">
+                        <h2 class="card-title" style="margin-bottom:20px">Регистрация маски</h2>
                         <form id="mask-form">
-                            <div class="form-group">
-                                <label>Model Type</label>
-                                <select id="model" required class="custom-select">
-                                    <option value="s">Sabre (s)</option><option value="f">Foil (f)</option><option value="e">Epee (e)</option><option value="c">Trainer (c)</option>
-                                </select>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Модель</label>
+                                    <select id="model" required class="custom-select">
+                                        <option value="s">Sabre (Сабля)</option>
+                                        <option value="f">Foil (Рапира)</option>
+                                        <option value="e">Epee (Шпага)</option>
+                                        <option value="c">Trainer (Тренер)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Размер</label>
+                                    <select id="size" required class="custom-select">
+                                        <option value="S">S</option>
+                                        <option value="M" selected>M</option>
+                                        <option value="L">L</option>
+                                        <option value="XL">XL</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label>Size</label>
-                                    <select id="size" required class="custom-select"><option>S</option><option>M</option><option>L</option><option>XL</option></select>
+                                    <label>Поколение</label>
+                                    <input type="text" id="generation" class="form-input" placeholder="Например: 60" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Generation</label>
-                                    <input type="text" id="generation" placeholder="60" required class="glass-input">
+                                    <label>Подкладка</label>
+                                    <input type="text" id="lining" class="form-input" placeholder="InPo" value="InPo">
                                 </div>
                             </div>
-                            <div class="form-group">
-                                <label>Lining</label>
-                                <input type="text" id="lining" placeholder="InPo" value="InPo" class="glass-input">
-                            </div>
-                            <button type="submit" class="btn-primary btn-block" id="submit-btn">Generate & Print</button>
+                            <button type="submit" class="btn btn-primary btn-block btn-lg" id="submit-btn">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                <span id="submit-text">Создать и напечатать</span>
+                            </button>
                         </form>
-                        <div id="message" class="alert-success"></div>
+                        <div id="message" class="alert alert-success"></div>
                     </div>
 
-                    <div class="card table-card">
+                    <!-- Recent Masks Table -->
+                    <div class="card fade-in" style="animation-delay:0.2s">
                         <div class="table-header">
-                            <h2 class="card-title">Recent Manufactured Units</h2>
-                            <input type="text" id="search-input" placeholder="Search SN..." class="search-box">
+                            <h2 class="card-title">Последние маски</h2>
+                            <input type="text" id="search-input" class="search-box" placeholder="Поиск по серийному номеру...">
                         </div>
                         <div class="table-wrapper">
                             <table class="data-table">
-                                <thead><tr><th>ID</th><th>Serial Number</th><th>Model</th><th>Specs</th><th>Date</th><th>Status</th></tr></thead>
-                                <tbody id="masks-tbody"></tbody>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Серийный номер</th>
+                                        <th>Модель</th>
+                                        <th>Характеристики</th>
+                                        <th>Дата</th>
+                                        <th>Статус</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="masks-tbody">
+                                    <!-- Skeleton loading -->
+                                    <tr class="skeleton-row"><td><div class="skeleton" style="width:40px"></div></td><td><div class="skeleton" style="width:140px"></div></td><td><div class="skeleton" style="width:60px"></div></td><td><div class="skeleton" style="width:80px"></div></td><td><div class="skeleton" style="width:60px"></div></td><td><div class="skeleton" style="width:70px"></div></td></tr>
+                                    <tr class="skeleton-row"><td><div class="skeleton" style="width:40px"></div></td><td><div class="skeleton" style="width:140px"></div></td><td><div class="skeleton" style="width:60px"></div></td><td><div class="skeleton" style="width:80px"></div></td><td><div class="skeleton" style="width:60px"></div></td><td><div class="skeleton" style="width:70px"></div></td></tr>
+                                    <tr class="skeleton-row"><td><div class="skeleton" style="width:40px"></div></td><td><div class="skeleton" style="width:140px"></div></td><td><div class="skeleton" style="width:60px"></div></td><td><div class="skeleton" style="width:80px"></div></td><td><div class="skeleton" style="width:60px"></div></td><td><div class="skeleton" style="width:70px"></div></td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- VIEW: REPAIRS -->
+            <!-- ============================================
+                 REPAIRS VIEW
+                 ============================================ -->
             <div id="view-repairs" class="hidden">
-                <header class="main-header">
+                <header class="main-header fade-in">
                     <div>
-                        <h1>Repairs & Service</h1>
-                        <p class="header-subtitle">Scan mask to update status</p>
+                        <h1>Ремонт и обслуживание</h1>
+                        <p class="header-subtitle">Сканируйте QR-код на маске для обновления статуса</p>
                     </div>
                 </header>
 
-                <div class="card form-card" style="max-width: 600px; margin: 0 auto;">
-                    <div id="repair-scanner-section">
-                        <h2 class="card-title">Scan QR Code</h2>
-                        <p class="header-subtitle" style="margin-bottom: 20px;">Point camera at the mask label</p>
-                        <div id="qr-reader" style="width: 100%; max-width: 400px; margin: 0 auto;"></div>
-                        <button class="btn-primary btn-block" id="start-scan-btn" onclick="startScanner()" style="margin-top: 20px;">Start Camera Scan</button>
+                <div style="max-width:560px;margin:0 auto">
+                    <!-- Scanner -->
+                    <div class="card form-card fade-in" id="repair-scanner-section">
+                        <h2 class="card-title" style="margin-bottom:8px">Сканировать QR-код</h2>
+                        <p class="header-subtitle" style="margin-bottom:20px">Наведите камеру на этикетку маски</p>
+                        <div id="qr-reader" style="width:100%;max-width:400px;margin:0 auto;border-radius:var(--radius-md);overflow:hidden"></div>
+                        <button class="btn btn-primary btn-block btn-lg" id="start-scan-btn" onclick="startScanner()" style="margin-top:20px">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2h-3M12 11h.01M12 7h.01M12 15h.01M15 21H3a2 2 0 01-2-2V5a2 2 0 012-2h16a2 2 0 012 2v6M9 21V5"/></svg>
+                            Включить камеру
+                        </button>
                     </div>
 
-                    <div id="repair-details-section" class="hidden">
-                        <h2 class="card-title">Mask Details</h2>
-                        <div id="repair-info-box" class="repair-info"></div>
-                        
-                        <div class="form-group" style="margin-top: 20px;">
-                            <label>Repair Notes / Issue Description</label>
-                            <textarea id="repair-notes" class="glass-input" rows="3" placeholder="e.g. Mesh broken, strap replaced"></textarea>
+                    <!-- Repair Details -->
+                    <div id="repair-details-section" class="hidden card form-card fade-in">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+                            <h2 class="card-title">Детали маски</h2>
+                            <button class="btn btn-ghost btn-sm" onclick="resetRepairView()">Сканировать другую</button>
                         </div>
-                        
+                        <div id="repair-info-box" class="repair-info"></div>
+
+                        <div class="form-group" style="margin-top:var(--space-lg)">
+                            <label>Заметки ремонта / Описание неисправности</label>
+                            <textarea id="repair-notes" class="form-input" rows="3" placeholder="Например: замена сетки, ремонт ремешка..."></textarea>
+                        </div>
+
                         <div class="repair-actions">
-                            <button class="btn-warning btn-block" onclick="updateMaskStatus('В ремонте')">Send to Repair</button>
-                            <button class="btn-success btn-block" onclick="updateMaskStatus('На складе')">Mark as Fixed (In Stock)</button>
-                            <button class="btn-secondary btn-block" onclick="resetRepairView()">Cancel / Scan Another</button>
+                            <button class="btn btn-warning btn-block btn-lg" onclick="updateMaskStatus('В ремонте')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+                                Отправить в ремонт
+                            </button>
+                            <button class="btn btn-success btn-block btn-lg" onclick="updateMaskStatus('На складе')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                Отметить исправленной (На складе)
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -155,10 +250,13 @@
         </main>
     </div>
 
-    <!-- Скрытый блок для печати -->
-    <div id="print-area">
+    <!-- ============================================
+         PRINT AREA
+         ============================================ -->
+    <div id="print-area" style="display:none">
         <div id="qrcode"></div>
         <div id="serial-text"></div>
+        <div style="margin-top:12px;font-size:12px;color:#94a3b8">MaskOS™ Production Tracker</div>
     </div>
 
     <script src="app.js"></script>
